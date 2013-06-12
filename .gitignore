@@ -1,0 +1,5 @@
+/lib
+/include
+/bin
+*.egg-info
+*.pyc
