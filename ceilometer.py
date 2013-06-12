@@ -23,16 +23,16 @@ def main():
     env = Environment(defaults=DEFAULTS, **os.environ)
     log.addHandler(logging.StreamHandler())
     log.level = logging.DEBUG
+    collect(env)
 
-    format = fmt_statsite    
+def collect(env):    
     region = env["AWS_REGION"]
 
     APIS = [SES]
     metrics = fetch_metrics(*[API(region=region) for API in APIS])
 
-    for value, key, typ in metrics:
-        time = "a"
-        print format(key, value, typ, time)
+    for result in metrics:
+        yield result    
         
 def fetch_metrics(*apis):
     for api in apis:
