@@ -19,12 +19,13 @@ DEFAULTS = dict(
     AWS_REGION = "us-east-1",
     FORMAT     = "graphite",
     INTERVAL   = "60",
+    LOGLEVEL   = "DEBUG",
 )
 
 def main():
     env = Environment(defaults=DEFAULTS, **os.environ)
     log.addHandler(logging.StreamHandler())
-    log.level = logging.DEBUG
+    log.level = getattr(logging, env["LOGLEVEL"])
 
     format = env["FORMAT"]
     interval = int(env["INTERVAL"])
