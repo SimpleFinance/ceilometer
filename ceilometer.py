@@ -16,43 +16,66 @@ __all__ = ["Environment"]
 log = logging.getLogger("ceilometer")
 
 DEFAULTS = dict(
-    AWS_REGION = "us-east-1"
+    AWS_REGION = "us-east-1",
+    FORMAT = "graphite",
 )
 
 def main():
     env = Environment(defaults=DEFAULTS, **os.environ)
     log.addHandler(logging.StreamHandler())
     log.level = logging.DEBUG
-    collect(env)
 
-def collect(env):    
+    format = env["FORMAT"]
+    formatter = formatters[format]
+
+    for metric in collect(env):
+        sys.stdout.write(formatter(*metric))
+
+def collect(env):
     region = env["AWS_REGION"]
 
     APIS = [SES]
     metrics = fetch_metrics(*[API(region=region) for API in APIS])
 
     for result in metrics:
-        yield result    
-        
+        yield result
+
 def fetch_metrics(*apis):
     for api in apis:
         for result in api.fetch_metrics():
             yield result
 
-def fmt_text(key, value, typ, time):
-    return "%10s %20s %s" % (value, key, typ)
-    
-def fmt_graphite(key, value, typ, time):
-    key = ".".join((key, typ))
-    return " ".join(str(x) for x in (key, value, time))
+def fmt_text(value, key, typ, time):
+    return "%10s %20s %s" % (value, key, typ) + "\n"
 
-def fmt_statsite(key, value, typ, time):
-    return "%s:%s|%s" % (key, value, typ)
-            
+def fmt_graphite(value, key, typ, time):
+    return " ".join(str(x) for x in ("%s.%s" % (key, typ), value, time)) + "\n"
+
+def fmt_statsite(value, key, typ, time):
+    return "%s:%s|%s" % (key, value, typ) + "\n"
+
+formatters = dict(
+    graphite = fmt_graphite,
+    statsite = fmt_statsite,
+    text     = fmt_text,
+)
+
+class metric(object):
+
+    def __init__(self, now=time.time):
+        self.now = now
+
+    def __call__(self, fn):
+        def wrapped(*args, **kwargs):
+            now = self.now()
+            for value, key, typ in fn(*args, **kwargs):
+                yield value, key, typ, now
+        return wrapped
+
 class AWS(object):
     metrics = []
     connect_to_region = None
-    
+
     def __init__(self, api=None, region=None):
         self.api = api
         if self.api is None and all((region, self.connect_to_region)):
@@ -70,7 +93,8 @@ class SES(AWS):
         "quota",
         "send_statistics"
     ]
-            
+
+    @metric()
     def verified_email_addresses(self):
         verified = self.api.list_verified_email_addresses().get(
             "ListVerifiedEmailAddressesResponse", {}).get(
@@ -79,6 +103,7 @@ class SES(AWS):
 
         yield len(verified), "ses.verified_email_addresses", "kv"
 
+    @metric()
     def quota(self):
         quota = self.api.get_send_quota().get(
             "GetSendQuotaResponse", {}).get(
@@ -88,6 +113,7 @@ class SES(AWS):
         yield float(quota["MaxSendRate"]), "ses.quota.max_send_rate", "kv"
 
     def get_send_statistics(self, since):
+        now = time.time()
         send = self.api.get_send_statistics().get(
             "GetSendStatisticsResponse", {}).get(
                 "GetSendStatisticsResult", {}).get(
@@ -98,6 +124,7 @@ class SES(AWS):
             if data['Timestamp'] > since:
                 yield data
 
+    @metric()
     def send_statistics(self, since=None):
         if since is None:
             since = datetime.datetime.utcnow() - datetime.timedelta(hours=24)
@@ -110,7 +137,8 @@ class SES(AWS):
 
         for key in sorted(totals):
             yield totals[key], "ses.stats.%s_last_24_hours" % key.lower(), "kv"
-            
+
+
 class Environment(dict):
 
     def __init__(self, defaults=None, **kwargs):
