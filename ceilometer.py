@@ -24,19 +24,31 @@ def main():
     log.addHandler(logging.StreamHandler())
     log.level = logging.DEBUG
 
+    format = fmt_statsite    
     region = env["AWS_REGION"]
 
     APIS = [SES]
     metrics = fetch_metrics(*[API(region=region) for API in APIS])
 
     for value, key, typ in metrics:
-        print "%10s %20s %s" % (value, key, typ)
-
+        time = "a"
+        print format(key, value, typ, time)
+        
 def fetch_metrics(*apis):
     for api in apis:
         for result in api.fetch_metrics():
             yield result
-        
+
+def fmt_text(key, value, typ, time):
+    return "%10s %20s %s" % (value, key, typ)
+    
+def fmt_graphite(key, value, typ, time):
+    key = ".".join((key, typ))
+    return " ".join(str(x) for x in (key, value, time))
+
+def fmt_statsite(key, value, typ, time):
+    return "%s:%s|%s" % (key, value, typ)
+            
 class AWS(object):
     metrics = []
     connect_to_region = None
