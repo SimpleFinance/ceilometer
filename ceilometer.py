@@ -26,10 +26,17 @@ def main():
 
     region = env["AWS_REGION"]
 
-    ses = SES(region=region)
-    for value, key, typ in ses.fetch_metrics():
+    APIS = [SES]
+    metrics = fetch_metrics(*[API(region=region) for API in APIS])
+
+    for value, key, typ in metrics:
         print "%10s %20s %s" % (value, key, typ)
 
+def fetch_metrics(*apis):
+    for api in apis:
+        for result in api.fetch_metrics():
+            yield result
+        
 class AWS(object):
     metrics = []
     connect_to_region = None
