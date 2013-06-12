@@ -25,15 +25,19 @@ def main():
     log.level = logging.DEBUG
 
     region = env["AWS_REGION"]
-    ses = SES(api=boto.ses.connect_to_region(region))
+
+    ses = SES(region=region)
     for value, key, typ in ses.fetch_metrics():
         print "%10s %20s %s" % (value, key, typ)
 
 class AWS(object):
     metrics = []
-
-    def __init__(self, api=None):
+    connect_to_region = None
+    
+    def __init__(self, api=None, region=None):
         self.api = api
+        if self.api is None and all((region, self.connect_to_region)):
+            self.api = self.connect_to_region(region)
 
     def fetch_metrics(self):
         for metric in self.metrics:
@@ -41,6 +45,7 @@ class AWS(object):
                 yield result
 
 class SES(AWS):
+    connect_to_region = staticmethod(boto.ses.connect_to_region)
     metrics = [
         "verified_email_addresses",
         "quota",
