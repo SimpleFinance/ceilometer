@@ -59,7 +59,7 @@ def fmt_text(value, key, typ, time, prefix="", suffix="\n"):
     return "%s%10s %20s %s%s" % (prefix, value, key, typ, suffix)
 
 def fmt_graphite(value, key, typ, time, prefix="", suffix="\n"):
-    return "%s%s.%s %s %s%s" % (key, typ, value, time, suffix)
+    return "%s%s.%s %s %s%s" % (prefix, key, typ, value, time, suffix)
 
 def fmt_statsite(value, key, typ, time, prefix="", suffix="\n"):
     return "%s%s:%s|%s%s" % (prefix, key, value, typ, suffix)
