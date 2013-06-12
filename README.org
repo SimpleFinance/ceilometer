@@ -1,0 +1,11 @@
+* =ceilometer=
+
+=ceilometer= measures your cloud resource usage. It collects data using AWS APIs and produces output that can be plugged in to your monitoring system of choice.
+
+** Development
+
+#+BEGIN_SRC
+virtualenv .
+./bin/python setup.py develop
+./bin/python -m tests
+#+END_SRC
