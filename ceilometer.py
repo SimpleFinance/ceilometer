@@ -28,8 +28,8 @@ def main():
     log.level = getattr(logging, env["LOGLEVEL"])
 
     format = env["FORMAT"]
-    interval = int(env["INTERVAL"])
     formatter = formatters[format]
+    interval = int(env["INTERVAL"])
 
     while True:
         for metric in collect(env):
