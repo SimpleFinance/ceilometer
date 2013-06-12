@@ -32,15 +32,18 @@ def main():
     interval = int(env["INTERVAL"])
 
     while True:
+        log.debug("beginning collection with format %r", format)
         for metric in collect(env):
             sys.stdout.write(formatter(*metric))
+
+        log.debug("waiting %d seconds", interval)
         time.sleep(interval)
 
 def collect(env):
     region = env["AWS_REGION"]
-
-    APIS = [SES]
-    metrics = fetch_metrics(*[API(region=region) for API in APIS])
+    
+    log.debug("connecting to %s %s", region, ", ".join(APIS))
+    metrics = fetch_metrics(*[API(region=region) for API in APIS.values()])
 
     for result in metrics:
         yield result
@@ -143,6 +146,9 @@ class SES(AWS):
         for key in sorted(totals):
             yield totals[key], "ses.stats.%s_last_24_hours" % key.lower(), "kv"
 
+APIS = dict(
+    SES = SES,
+)
 
 class Environment(dict):
 
