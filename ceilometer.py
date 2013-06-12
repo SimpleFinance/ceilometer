@@ -18,6 +18,7 @@ log = logging.getLogger("ceilometer")
 DEFAULTS = dict(
     AWS_REGION = "us-east-1",
     FORMAT = "graphite",
+    INTERVAL = "60",
 )
 
 def main():
@@ -26,10 +27,13 @@ def main():
     log.level = logging.DEBUG
 
     format = env["FORMAT"]
+    interval = int(env["INTERVAL"])
     formatter = formatters[format]
 
-    for metric in collect(env):
-        sys.stdout.write(formatter(*metric))
+    while True:
+        for metric in collect(env):
+            sys.stdout.write(formatter(*metric))
+        time.sleep(interval)
 
 def collect(env):
     region = env["AWS_REGION"]
