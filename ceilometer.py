@@ -20,6 +20,7 @@ DEFAULTS = dict(
     FORMAT     = "graphite",
     INTERVAL   = "60",
     LOGLEVEL   = "DEBUG",
+    PREFIX     = "aws.",
 )
 
 def main():
@@ -30,11 +31,12 @@ def main():
     format = env["FORMAT"]
     formatter = formatters[format]
     interval = int(env["INTERVAL"])
+    prefix = env["PREFIX"]
 
     while True:
         log.debug("beginning collection with format %r", format)
         for metric in collect(env):
-            sys.stdout.write(formatter(*metric))
+            sys.stdout.write(formatter(*metric, prefix=prefix))
 
         log.debug("waiting %d seconds", interval)
         time.sleep(interval)
@@ -53,14 +55,14 @@ def fetch_metrics(*apis):
         for result in api.fetch_metrics():
             yield result
 
-def fmt_text(value, key, typ, time):
-    return "%10s %20s %s" % (value, key, typ) + "\n"
+def fmt_text(value, key, typ, time, prefix="", suffix="\n"):
+    return "%s%10s %20s %s%s" % (prefix, value, key, typ, suffix)
 
-def fmt_graphite(value, key, typ, time):
-    return " ".join(str(x) for x in ("%s.%s" % (key, typ), value, time)) + "\n"
+def fmt_graphite(value, key, typ, time, prefix="", suffix="\n"):
+    return "%s%s.%s %s %s%s" % (key, typ, value, time, suffix)
 
-def fmt_statsite(value, key, typ, time):
-    return "%s:%s|%s" % (key, value, typ) + "\n"
+def fmt_statsite(value, key, typ, time, prefix="", suffix="\n"):
+    return "%s%s:%s|%s%s" % (prefix, key, value, typ, suffix)
 
 formatters = dict(
     graphite = fmt_graphite,
