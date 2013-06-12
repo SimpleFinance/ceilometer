@@ -18,7 +18,7 @@ log = logging.getLogger("ceilometer")
 DEFAULTS = dict(
     AWS_REGION = "us-east-1",
     FORMAT     = "graphite",
-    INTERVAL   = "60",
+    INTERVAL   = "30",
     LOGLEVEL   = "DEBUG",
     PREFIX     = "aws.",
 )
